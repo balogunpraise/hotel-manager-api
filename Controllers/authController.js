@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs')
 
 //create a JWT token
     const createToken = (user) => {
-        return jwt.sign({id: user._id, role: user.role}, process.env.JWT_SECRET,{expiresIn: process.env.JWT_EXPIRES_IN});
+        return jwt.sign({id: user._id, email: user.email}, process.env.JWT_SECRET,{expiresIn: process.env.JWT_EXPIRES_IN});
     };
 
  //Create a new user   
@@ -20,7 +20,7 @@ exports.signUp = async(req, res) =>{
         }
 
         //check if user already exists
-        const existingUser = await User.findOne({email});
+        const existingUser = await User.findOne({email}).select('+password');
         if(existingUser){
             return res.status(400).json({message:'Email is already registered'})
         }
@@ -65,12 +65,18 @@ exports.signUp = async(req, res) =>{
 
 //Log in the user
 exports.login = async(req, res) =>{
+    const {email, password} = req.body
+    console.log("Login attempt:", { email, password });
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+    }
     try{
-        const {email, password} = req.body
-        const user = await User.findOne({email});
+        const user = await User.findOne({email}).select('+password');
+        
         if(!user){
             return res.status(400).json({message: 'Invalid Password or Email'});
         }
+        
         const isMatchPassword = await bcrypt.compare(password, user.password)
         if(!isMatchPassword){
             return res.status(400).json({message: 'Invalid credentials'})

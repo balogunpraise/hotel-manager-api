@@ -5,8 +5,8 @@ const protect = require('../Middlewares/authMiddleware')
 const router = express.Router()
 
 router.post ('/signUp', authController.signUp)
-      .post('/login', authController.login)
-      .post('/logout', authController.logout)
+router.post('/login', authController.login)
+router.post('/logout', authController.logout)
 
 
 module.exports = router      

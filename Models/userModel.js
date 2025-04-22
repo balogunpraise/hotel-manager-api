@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema({
     email:{
         type:String,
         unique:true,
-        required:['true', 'Please enter your email']
+        required:[true, 'Please enter your email']
     },
     role:{
         type:String,
@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     },
     password:{
         type:String,
-        minlegth:6,
+        minlength:6,
         required:[true, 'Please enter your Password'],
         select:false
     },
