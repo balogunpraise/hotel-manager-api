@@ -3,15 +3,21 @@ const mongoose = require('mongoose')
 const dotenv = require('dotenv')
 dotenv.config({path:'./config.env'})
 const cors = require('cors')
-const morgan = require()
+const morgan = require('morgan')
+const authRouter = require('./Routes/authRouter')
+const cookieParser = require('cookie-parser')
 
 
 const app = express()
 
 //Middleware
 app.use(express.json())
+app.use(cookieParser())
 app.use(cors())
 app.use(morgan('dev'))
+
+//Routes
+app.use('/api/auth', authRouter)
 
 //DB connection
 const mongoUri = process.env.MONGO_URI
