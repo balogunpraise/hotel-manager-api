@@ -7,17 +7,22 @@ const bcrypt = require('bcryptjs')
 
 //create a JWT token
     const createToken = (user) => {
-        return jwt.sign({id: user._id, email: user.email}, process.env.JWT_SECRET,{expiresIn: process.env.JWT_EXPIRES_IN});
+        return jwt.sign({id: user._id, email: user.email, role: user.role}, process.env.JWT_SECRET,{expiresIn: process.env.JWT_EXPIRES_IN});
     };
+
+//🍪Create a cookie functionality
+const createCookie = (res, token) => {
+    return  res.cookie( 'token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: process.env.JWT_COOKIE_EXPIRES_IN              //1000 * 60 * 60 * 24
+        });
+}
 
  //Create a new user   
 exports.signUp = async(req, res) =>{
     try{
-        const {firstName, lastName, email, phone, password, passwordConfirm} = req.body;
-        //check if password matches with passwordConfirm
-        if(password !== passwordConfirm){
-            return res.status(400).json({message:'Passwords do not match'});
-        }
+        const {firstName, lastName, email, phone, password} = req.body;
 
         //check if user already exists
         const existingUser = await User.findOne({email});
@@ -31,8 +36,7 @@ exports.signUp = async(req, res) =>{
             lastName,
             email,
             phone,
-            password,
-            passwordConfirm
+            password
         })
         await newUser.save();
 
@@ -40,18 +44,21 @@ exports.signUp = async(req, res) =>{
         const token = createToken(newUser);
 
      // 🍪 Set token as HTTP-only cookie 
-     res.cookie( 'token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 // 1 day
-     })    
+     createCookie(res, token)  
 
     // ✅ Return success response
     res.status(201).json({
         status: 'User successfully Created',
         token,
         user:{
-            data: newUser
+             data: {
+                id: newUser._id,
+                firstName: newUser.firstName,
+                lastName: newUser.lastName,
+                email: newUser.email,
+                phone: newUser.phone,
+                role: newUser.role
+            }
         }
     });
 
@@ -62,6 +69,40 @@ exports.signUp = async(req, res) =>{
         });
     }
 };
+
+//Create an Admin User
+exports.signUpAdmin = async(req, res) =>{
+    const {firstName, lastName, email, phone, password, secret} = req.body;
+    if(secret !== process.env.ADMIN_SECRET_KEY){
+        return res.status(401).json({message: 'Unauthorized'})
+    }
+    try{
+        const exists = await User.findOne({email})
+        if(exists){
+            return res.status(400).json({message:'Email already exists'})
+        }
+        const admin = await User.create({firstName, lastName, email, phone, password, role:'admin'});
+       
+        //create Admin token
+       const token = createToken(admin)
+
+       //Set Admin cookie as http only
+       createCookie(res, token) 
+
+        res.status(201).json({
+            message: 'Admin signed up succcessfully', 
+              data: {
+                id: admin._id,
+                firstName: admin.firstName,
+                lastName: admin.lastName,
+                email: admin.email,
+                phone: admin.phone,
+                role: admin.role
+            }})
+    }catch(err){
+        return res.status(500).json({message: 'server error', error: err.message})
+    }
+}
 
 //Log in the user
 exports.login = async(req, res) =>{
@@ -85,11 +126,8 @@ exports.login = async(req, res) =>{
         const token = createToken(user);
 
         //🍪 Set cookie as httpOnly
-        res.cookie( 'token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 1000 * 60 * 60 * 24
-        });
+        createCookie(res, token)
+
         //Return success response
         res.status(200).json({
             message:'User successfully logged in',
@@ -109,4 +147,32 @@ exports.login = async(req, res) =>{
 exports.logout = (req, res) =>{
     res.clearCookie('token')
     res.status(200).json({message: 'Logged out successfully'})
+}
+
+
+
+
+exports.deleteUser = async(req, res) =>{
+        const {id} = req.params
+    try{
+        const deletedUser = await User.findByIdAndDelete(id)
+        if(!deletedUser){
+            return res.status(404).json({
+                message: 'User not found',
+                status: 'Failed'
+            })
+        }
+
+        res.status(200).json({
+            status: 'Success',
+            message: 'User successfully deleted',
+            data: null
+        })
+
+    }catch(err){
+        return res.status(500).json({
+            status:'Server error',
+            error:err.message
+        });
+    }
 }
