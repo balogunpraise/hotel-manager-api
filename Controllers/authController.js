@@ -176,3 +176,19 @@ exports.deleteUser = async(req, res) =>{
         });
     }
 }
+
+exports.getAllUsers = async(req, res) =>{
+    try{
+        const allUsers = await User.find()
+        res.status(200).json({
+            status: 'Success',
+            message: 'Users successfully fetched',
+            users: allUsers
+        });
+    }catch(err){
+        return res.status(500).json({
+            status:'Server error',
+            error:err.message
+        });
+    }
+}

@@ -18,7 +18,7 @@ app.use(morgan('dev'))
 
 //Routes
 app.use('/api/auth', authRouter)
-app.use('/api', restrictTo, authRouter)
+app.use('/api/users',  authRouter)
 
 //DB connection
 const mongoUri = process.env.MONGO_URI
