@@ -7,6 +7,7 @@ const morgan = require('morgan')
 const authRouter = require('./Routes/authRouter')
 const cookieParser = require('cookie-parser')
 const {authMiddleware, restrictTo} = require('./Middlewares/authMiddleware')
+const roomRouter = require('./Routes/roomRoutes')
 
 const app = express()
 
@@ -19,6 +20,7 @@ app.use(morgan('dev'))
 //Routes
 app.use('/api/auth', authRouter)
 app.use('/api/users',  authRouter)
+app.use('/api/rooms', roomRouter)
 
 //DB connection
 const mongoUri = process.env.MONGO_URI
