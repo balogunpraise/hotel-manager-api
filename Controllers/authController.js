@@ -192,3 +192,80 @@ exports.getAllUsers = async(req, res) =>{
         });
     }
 }
+
+
+exports.roleChange = async(req, res) =>{
+    try{
+        const {userId, role} = req.body
+
+        //Find the User
+        const user = await User.findById(userId)
+        if(!user){
+            return res.status(404).json({message: 'User not found'})
+        }
+        //
+        const allowedRoles = ['manager', 'receptionist', 'housekeeping'];
+
+        if(!allowedRoles.includes(role)){
+            return res.status(400).json({message: 'Invalid role provided'})
+        }
+
+        //Ensure a new role is provided
+        if(!role || !role.trim()){
+            return res.status(400).json({message: 'userId and new role are required'})
+        }
+
+        //Use findByIdAndUpdate to update the role
+        const updatedRole = await User.findByIdAndUpdate(userId, {role}, {new:true, runValidators: true}) 
+        
+        //Return a successful role update
+        return res.status(200).json({
+            status: 'success',
+            message:'User role successfully updated',
+            data:updatedRole
+        })
+
+    }catch(err){
+        return res.status(500).json({
+            status:'Server error',
+            error:err.message
+        });
+    }
+}
+
+exports.removeRole = async(req, res) =>{
+        const {id} = req.params
+        const {role} = req.body
+    try{
+        const allowedRoles = ['manager', 'receptionist', 'housekeeping'];
+        const user = await User.findById(id)
+        if(!user){
+            return res.status(404).json({
+                status: 'Fail',
+                message: 'User not found'
+            })
+        }
+       
+        if(allowedRoles.includes(user.role)){
+             user.role = 'guest'
+            await user.save()
+         
+       return res.status(200).json({
+        status: 'Success',
+        message: 'User role updated to guest',
+        data: user
+       })
+        }
+       else{
+        return res.status(400).json({
+            status: 'Fail',
+            message: 'User does not have the specified role or role is not allowed'
+        })
+       } 
+    }catch(err){
+        return res.status(500).json({
+            status:'Server error',
+            error:err.message
+        });
+    }
+}
