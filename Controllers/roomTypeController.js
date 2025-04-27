@@ -26,7 +26,7 @@ exports.roomClasses = async(req, res) =>{
                 message: 'Room type not found'
             })
         }else{
-            await RoomType.save()
+            await suite.save()
             return res.status(201).json({
                 status: 'Success',
                 message: 'Room type successfully created',
