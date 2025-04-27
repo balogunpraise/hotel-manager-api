@@ -2,7 +2,12 @@ const Room = require('../Models/roomModel')
 
 exports.createRoom = async(req, res) =>{
     try{
-        const room = await Room.create(req.body)
+        const {roomNumber, roomType, floor} = req.body
+        const room = await Room.create({
+            roomNumber,
+            roomType,
+            floor
+        })
         console.log(req.body)
         if(!room){
             return res.status(404).json({
@@ -10,9 +15,10 @@ exports.createRoom = async(req, res) =>{
                 message: 'Room not Found'
             })
         }
-        return res.status(200).json({
+        return res.status(201).json({
             status:'Success',
-            message: 'Room successfully created'
+            message: 'Room successfully created',
+            data:room
         })
     }catch(err){
         return res.status(400).json({
@@ -68,7 +74,7 @@ exports.getRoomById = async(req, res) =>{
 exports.updateRoom = async(req, res) =>{
     const {id} = req.params
     try{
-        const updatedRoom = await Room.findOneAndUpdate(id, req.body, {new:true, runValidators:true})
+        const updatedRoom = await Room.findByIdAndUpdate(id, req.body, {new:true, runValidators:true})
         if(!updatedRoom){
             return res.status(404).json({
                 status: 'Fail',
