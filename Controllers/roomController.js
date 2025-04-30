@@ -1,3 +1,4 @@
+const { query } = require('express-validator')
 const Room = require('../Models/roomModel')
 
 exports.createRoom = async(req, res) =>{
@@ -31,10 +32,25 @@ exports.createRoom = async(req, res) =>{
 
 exports.getAllRooms = async(req, res) =>{
     try{
+        const page = parseInt(req.query.page)|| 1
+        const limit = parseInt(req.query.limit)|| 10
+        const skip = (page - 1) * limit
+        const total = await Room.countDocuments()
         const allRooms = await Room.find()
+              .skip(skip)
+              .limit(limit)
+              .sort({createdAt: -1})
+
+         if(page){
+            total
+            if(skip >= total) throw new Error('This page does not exist')
+         }     
         return res.status(200).json({
             status: 'Success',
             message: 'successfully fetched rooms',
+            total,
+            page,
+            totalPages: Math.ceil(total/limit),
             data: allRooms
         })
         

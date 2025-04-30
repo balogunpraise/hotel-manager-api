@@ -107,7 +107,7 @@ exports.signUpAdmin = async(req, res) =>{
 //Log in the user
 exports.login = async(req, res) =>{
     const {email, password} = req.body
-    console.log("Login attempt:", { email, password });
+   
     if (!email || !password) {
         return res.status(400).json({ message: 'Email and password are required' });
     }

@@ -10,6 +10,7 @@ const {authMiddleware, restrictTo} = require('./Middlewares/authMiddleware')
 const roomRouter = require('./Routes/roomRoutes')
 const roomTypeRouter = require('./Routes/roomTypeRoute')
 const bookingRouter = require('./Routes/bookingRoute')
+const checkoutRouter = require('./Routes/checkoutRoute')
 
 const app = express()
 
@@ -25,6 +26,7 @@ app.use('/api/users',  authRouter)
 app.use('/api/rooms', roomRouter)
 app.use('/api/roomType', roomTypeRouter)
 app.use('/api/bookings', bookingRouter)
+app.use('/api/checkout', checkoutRouter)
 
 //DB connection
 const mongoUri = process.env.MONGO_URI
