@@ -5,9 +5,7 @@ exports.authMiddleware = function (req, res, next){
     const token = req.cookies.token || (req.headers.authorization && req.headers.authorization.startsWith("Bearer ") 
         ? req.headers.authorization.split(" ")[1] 
         : null);
-        
-        console.log('Authorization Header:', req.headers.authorization); // Log the whole authorization header
-        console.log('Extracted Token:', token); // Log the extracted token
+       
     if(!token){
         return res.status(401).json({message: 'No token, unauthorized'});
     }

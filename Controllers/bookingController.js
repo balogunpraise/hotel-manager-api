@@ -1,36 +1,40 @@
 const Booking = require('../Models/bookingModel')
+const Room = require('../Models/roomModel')
 
 exports.bookRoom = async(req, res)=>{
     try{
-        const {guest, room, checkInDate, checkOutDate, totalAmount} = req.body
+        const {guestId, roomId, checkInDate, checkOutDate, totalAmount} = req.body
+        const room = await Room.findById(roomId)
+        if(!room){
+            return res.status(404).json({
+                message:'Room not Found'
+            })
+        } 
+        const existingBookedRoom = await Booking.findOne({roomId})
+        if(existingBookedRoom){
+            return res.status(401).json({
+                status:'Fail',
+                message:'Room already booked',
+            })
+        }
         const bookedRoom = new Booking({
-            guest,
-            room,
+            guestId,
+            roomId,
             checkInDate,
             checkOutDate,
             totalAmount
         })
-        if(!bookedRoom){
-            return res.status(404).json({
-                status:'Fail',
-                message:'User has not yet booked a room'
-            })
-        }
-            
-        const existingBookedRoom = await Booking.findOne({guest})
-        if(existingBookedRoom){
-            return res.status(401).json({
-                status:'Fail',
-                message:'User already booked a room',
-            })
-        }else{
+    
           await bookedRoom.save()
+
+          room.status = "occupied"
+          await room.save()
+         
         return res.status(201).json({
             status:'Success',
             message:'Booking successful',
             data:bookedRoom
         })
-    }
 
     }catch(err){
         return res.status(500).json({
@@ -41,27 +45,63 @@ exports.bookRoom = async(req, res)=>{
     }
 }
 
-exports.getAllBookedRooms = async(req, res) =>{
-    try{
+// exports.getAllBookedRooms = async(req, res) =>{
+//     try{
+//         const allBooked = await Booking.find()
+//         return res.status(200).json({
+//             status:'Success',
+//             message:'datas fetched for all bookings',
+//             data:allBooked
+//         })
+//     }catch(err){
+//         return res.status(500).json({
+//             status:'Fail',
+//             message:'Internal server error',
+//             error: err.message
+//         })
+//     }
+// }
+
+exports.getAllBookedRooms = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1; // default to page 1
+        const limit = parseInt(req.query.limit) || 10; // default to 10 per page
+        const skip = (page - 1) * limit;
+
+        const total = await Booking.countDocuments();
         const allBooked = await Booking.find()
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 }); // optional: sort latest first
+
+           if(page){
+             total
+             if(skip >= total) throw new Error('This page does not exist')
+           } 
+
         return res.status(200).json({
-            status:'Success',
-            message:'datas fetched for all bookings',
-            data:allBooked
-        })
-    }catch(err){
+            status: 'Success',
+            message: 'Data fetched for all bookings',
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            data: allBooked
+        });
+    } catch (err) {
         return res.status(500).json({
-            status:'Fail',
-            message:'Internal server error',
+            status: 'Fail',
+            message: 'Internal server error',
             error: err.message
-        })
+        });
     }
-}
+};
+
+
 
 exports.getBookedRoomById = async(req, res)=>{
-    const {id} = req.params
+    const {bookingId} = req.params
     try{
-        const bookedRoom = await Booking.findById(id)
+        const bookedRoom = await Booking.findById(bookingId)
         if(!bookedRoom){
             return res.status(404).json({
                 status:'Fail',
@@ -83,9 +123,9 @@ exports.getBookedRoomById = async(req, res)=>{
 }
 
 exports.updateBooking = async(req, res) =>{
-    const {id} = req.params
+    const {bookingId} = req.params
     try{
-        const updatedBooking = await Booking.findByIdAndUpdate(id, req.body, {new:true, runValidators:true})
+        const updatedBooking = await Booking.findByIdAndUpdate(bookingId, req.body, {new:true, runValidators:true})
         if(!updatedBooking){
             return res.status(404).json({
                 message:'No booking found'
@@ -105,13 +145,23 @@ exports.updateBooking = async(req, res) =>{
     }
 }
 
-exports.deleteBookedRoom = async(req, res) =>{
-    const {id} = req.params
+exports.cancelBooking = async(req, res) =>{
     try{
-        const deletedBooking = await Booking.findByIdAndDelete(id)
+        const {bookingId} = req.params
+        const cancelledBooking = await Booking.findByIdAndDelete(bookingId)
+        if(!cancelledBooking){
+            return res.status(404).json({
+                message:'Booking not found'
+            })
+        }
+        const room = await Room.findById(cancelledBooking.roomId)
+        if(room){
+            room.status = "available";
+            await room.save()
+        }
         return res.status(200).json({
             status:'success',
-            message:'Booking successfully deleted',
+            message:'Booking successfully cancelled',
             data:null
         })
     }catch(err){
