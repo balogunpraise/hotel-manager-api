@@ -22,7 +22,8 @@ exports.checkoutRoom = async(req, res) =>{
         room.status = "available"
         await room.save();
 
-        await Booking.findByIdAndDelete(bookingId);
+       booking.bookingStatus = "checked-out"
+       await booking.save()
 
         return res.status(200).json({
             status:'Success',

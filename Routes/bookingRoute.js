@@ -7,7 +7,7 @@ const router = express.Router()
 router.post('/', authMiddleware, restrictTo('receptionist', 'housekeeping', 'guest'), bookingController.bookRoom)
 
 router.get('/:bookingId', authMiddleware, restrictTo('receptionist', 'housekeeping', 'guest'), bookingController.getBookedRoomById)
-router.get('/', authMiddleware, restrictTo('receptionist', 'housekeeping', 'guest'), bookingController.getAllBookedRooms)
+router.get('/', authMiddleware, restrictTo('receptionist', 'housekeeping', 'admin'), bookingController.getAllBookedRooms)
 
 router.patch('/:bookingId', authMiddleware, restrictTo('receptionist', 'housekeeping', 'guest'), bookingController.updateBooking)
 
