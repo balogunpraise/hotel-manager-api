@@ -27,7 +27,12 @@ const bookingSchema = new mongoose.Schema({
     default: 'confirmed' 
   },
   specialRequests: { type: String },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  active:{
+    type:Boolean,
+    default:true,
+    select:false
+  }
 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

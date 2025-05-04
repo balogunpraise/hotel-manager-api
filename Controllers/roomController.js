@@ -35,16 +35,43 @@ exports.getAllRooms = async(req, res) =>{
         const page = parseInt(req.query.page)|| 1
         const limit = parseInt(req.query.limit)|| 10
         const skip = (page - 1) * limit
-        const total = await Room.countDocuments()
-        const allRooms = await Room.find()
+
+        const search = req.query.search || ''
+        const statusFilter = req.query.status
+
+        const query = {}
+
+        if(search){
+            query.$or =[
+                {roomNumber:{$regex:search, $options:'i'}},
+                {status:{$regex:search, $options:'i'}},
+            ];
+        }
+
+        if(statusFilter){
+            query.status = statusFilter
+        }
+
+        const sortField = req.query.sort || '-createAt'
+        const sortBy = {}
+
+        if(sortField.startsWith('-')){
+            sortBy[sortField.substring(1)] = -1
+        }
+        else{
+            sortBy[sortField] = 1
+        }
+
+        const total = await Room.countDocuments(query)
+        const allRooms = await Room.find(query)
               .skip(skip)
               .limit(limit)
-              .sort({createdAt: -1})
+              .sort(sortBy)
 
-         if(page){
-            total
-            if(skip >= total) throw new Error('This page does not exist')
-         }     
+         
+            if(skip >= total && total !== 0){ 
+                throw new Error('This page does not exist')
+            } 
         return res.status(200).json({
             status: 'Success',
             message: 'successfully fetched rooms',
