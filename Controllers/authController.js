@@ -112,7 +112,7 @@ exports.login = async(req, res) =>{
         return res.status(400).json({ message: 'Email and password are required' });
     }
     try{
-        const user = await User.findOne({email});
+        const user = await User.findOne({email, active:true});
         
         if(!user){
             return res.status(400).json({message: 'Invalid Password or Email'});
@@ -209,7 +209,7 @@ exports.getAllUsers = async(req, res) =>{
             sortBy[sortField] = 1
         }
         const total = await User.countDocuments(query)
-        const allUsers = await User.find(query)
+        const allUsers = await User.find(query).select('-password')
                 .skip(skip).skip(skip)
                 .limit(limit)
                 .sort(sortBy)
@@ -365,6 +365,45 @@ exports.updateMe = async(req, res) =>{
             status:'Success',
             data:{
                 user: updatedUser
+            }
+        })
+    }
+
+
+    exports.deleteMe = async(req, res, next) =>{
+       await User.findByIdAndUpdate(req.user.id, { active:false })
+       
+       return res.status(202).json({
+        status:'success',
+        message: 'User deactivated',
+        data:null
+       })
+    }
+
+    exports.reActivateMyAcount = async(req, res) =>{
+        const {email, password} = req.body
+
+        const user = await User.findOne({email, active:false}).select('+password')
+      if(!user){
+        return res.status(400).json({
+            message:'No active account found for this email'
+        })
+      }
+      const isMatchPassword = await bcrypt.compare(password, user.password)
+      if(!isMatchPassword){
+        return res.status(400).json({
+            message:'Incorrect Password'
+        })
+      }
+
+      user.active = true
+      await user.save({validateBeforeSave:false});
+
+        return res.status(200).json({
+            status:'success',
+            message:'Account successfully reactivated',
+            data: {
+                user
             }
         })
     }
