@@ -112,7 +112,7 @@ exports.login = async(req, res) =>{
         return res.status(400).json({ message: 'Email and password are required' });
     }
     try{
-        const user = await User.findOne({email});
+        const user = await User.findOne({email, active:true});
         
         if(!user){
             return res.status(400).json({message: 'Invalid Password or Email'});
@@ -179,10 +179,50 @@ exports.deleteUser = async(req, res) =>{
 
 exports.getAllUsers = async(req, res) =>{
     try{
-        const allUsers = await User.find()
+        const page = parseInt(req.query.page)|| 1
+        const limit = parseInt(req.query.limit)|| 10
+        const skip = (page - 1) * limit
+
+        const search = req.query.search || ''
+        const statusFilter = req.query.status
+
+        const query = {};
+        if(search){
+            query.$or = [
+                {firstName:{$regex: search, $options: 'i'}},
+                {lastName:{$regex: search, $options: 'i'}},
+                {role:{$regex: search, $options: 'i'}},
+            ];
+        }
+
+        if(statusFilter){
+            query.status = statusFilter
+        }
+
+        const sortField = req.query.sort || '-createdAt'
+        const sortBy = {}
+
+        if(sortField.startsWith('-')){
+            sortBy[sortField.substring(1)] = -1;
+        }
+        else{
+            sortBy[sortField] = 1
+        }
+        const total = await User.countDocuments(query)
+        const allUsers = await User.find(query).select('-password')
+                .skip(skip).skip(skip)
+                .limit(limit)
+                .sort(sortBy)
+
+                if(skip >= total && total !== 0){
+                    throw new Error('this page does n0t exist')
+                }
         res.status(200).json({
             status: 'Success',
             message: 'Users successfully fetched',
+            total,
+            page,
+            totalPages: Math.ceil(total/limit),
             users: allUsers
         });
     }catch(err){
@@ -211,7 +251,7 @@ exports.roleChange = async(req, res) =>{
         }
 
         //Ensure a new role is provided
-        if(!role || !role.trim()){
+        if(!role){
             return res.status(400).json({message: 'userId and new role are required'})
         }
 
@@ -269,3 +309,101 @@ exports.removeRole = async(req, res) =>{
         });
     }
 }
+
+
+exports.getUserProfileFromToken = async(req, res) =>{
+   
+    try{
+        const autHeader = req.headers.authorization;
+
+       if(!autHeader || !autHeader.startsWith('Bearer ')){
+        return res.status(401).json({message:'No token Provided'})
+       }
+
+       const token = autHeader.split(' ')[1];
+       const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
+       const user = await User.findById(decoded.id)
+       if(!user){
+        return res.status(404).json({message:'User not found'})
+       }
+        return res.status(200).json({
+            status:'Success',
+            data:{
+            id:user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            role: user.role
+            }
+        })
+    }catch(err){
+        return res.status(500).json({
+            status:'Server error',
+            error:err.message
+        });
+    }
+}
+
+exports.updateMe = async(req, res) =>{
+    if(req.body.password || req.body.password){
+        return res.status(400).json({message:'This route is not for password update, please use /updateMyPassword'})
+    }
+
+        const filterObj = (Obj, ...allowFields) =>{
+            const newObj = {};
+            Object.keys(Obj).forEach(el =>{
+                if(allowFields.includes(el)) newObj[el] = Obj[el];
+            })
+            return newObj
+        } 
+        const filteredBody = filterObj(req.body, 'firstName', 'lastName', 'email')
+        const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {new:true, runValidators:true});
+
+        return res.status(200).json({
+            status:'Success',
+            data:{
+                user: updatedUser
+            }
+        })
+    }
+
+
+    exports.deleteMe = async(req, res, next) =>{
+       await User.findByIdAndUpdate(req.user.id, { active:false })
+       
+       return res.status(202).json({
+        status:'success',
+        message: 'User deactivated',
+        data:null
+       })
+    }
+
+    exports.reActivateMyAcount = async(req, res) =>{
+        const {email, password} = req.body
+
+        const user = await User.findOne({email, active:false}).select('+password')
+      if(!user){
+        return res.status(400).json({
+            message:'No active account found for this email'
+        })
+      }
+      const isMatchPassword = await bcrypt.compare(password, user.password)
+      if(!isMatchPassword){
+        return res.status(400).json({
+            message:'Incorrect Password'
+        })
+      }
+
+      user.active = true
+      await user.save({validateBeforeSave:false});
+
+        return res.status(200).json({
+            status:'success',
+            message:'Account successfully reactivated',
+            data: {
+                user
+            }
+        })
+    }
