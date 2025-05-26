@@ -361,7 +361,7 @@ exports.updateMe = async(req, res) =>{
             })
             return newObj
         } 
-        const filteredBody = filterObj(req.body, 'firstName', 'lastName', 'email')
+        const filteredBody = filterObj(req.body, 'firstName', 'lastName')
         const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {new:true, runValidators:true});
 
         return res.status(200).json({
@@ -470,5 +470,6 @@ exports.updateMe = async(req, res) =>{
             status:'Success',
             token
         })
-
     }
+
+  
