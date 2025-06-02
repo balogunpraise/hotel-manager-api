@@ -424,7 +424,7 @@ exports.updateMe = async(req, res) =>{
 
         const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/users/resetPassword/${resetToken}`;
 
-        const message = `forget your password? Submit a PATCH request with your password and passwordConfirm to :${resetUrl}.\nIf you didn't forget your password, Please ignore this email`;
+        const message = `forgot your password? click on the link provided to reset your password :${resetUrl}.\nIf you didn't forget your password, Please ignore this email`;
 
 
         try{

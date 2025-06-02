@@ -11,6 +11,7 @@ const roomRouter = require('./Routes/roomRoutes')
 const roomTypeRouter = require('./Routes/roomTypeRoute')
 const bookingRouter = require('./Routes/bookingRoute')
 const checkoutRouter = require('./Routes/checkoutRoute')
+const reviewRouter = require('./Routes/reviewRouter')
 
 const app = express()
 
@@ -27,6 +28,7 @@ app.use('/api/rooms', roomRouter)
 app.use('/api/roomType', roomTypeRouter)
 app.use('/api/bookings', bookingRouter)
 app.use('/api/checkout', checkoutRouter)
+app.use('/api/reviews', reviewRouter)
 
 //DB connection
 const mongoUri = process.env.MONGO_URI
