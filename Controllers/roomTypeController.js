@@ -4,7 +4,7 @@ const Room = require('../Models/roomModel')
 
 exports.roomClasses = async(req, res) =>{
     try{
-        const roomClass = ['Deluxe', 'Executive', 'Junior suite']
+        const roomClass = ['Deluxe', 'Executive', 'Junior suite', 'Family suite']
         const { name,description, capacity, basePrice, amenities, size, bedType } = req.body;
         const suite =  new RoomType({
             name,
